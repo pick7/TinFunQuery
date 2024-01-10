@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>TinFun查询</title>
+  <!-- 引入Bootstrap和jQuery库 -->
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.3/css/bootstrap.min.css">
+  <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+  <div class="container mt-5">
+    <h1>TinFun查询</h1>
+    <form id="query-form">
+      <div class="form-group">
+        <label for="addresses">请输入待查询的地址（每行一个）：</label>
+        <textarea class="form-control" id="addresses" rows="5"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">查询</button>
+    </form>
+    <hr/>
+    <h2>查询结果</h2>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      // 监听表单提交事件
+      $('#query-form').submit(function (e) {
+        e.preventDefault(); // 阻止表单默认提交行为
+
+        // 获取待查询的地址列表
+        var addresses = $('#addresses').val().trim().split('\n');
+
+        // 清空查询结果区域
+        $('#result').empty();
+
+        // 循环查询每个地址
+        addresses.forEach(function (address) {
+          // 发送查询请求
+          $.ajax({
+            url: 'https://api.tinfun.com/v1/ticket/' + encodeURIComponent(address),
+            type: 'GET',
+            dataType: 'json',
+            success: function (res) {
+              // 处理查询结果
+              if (res.code === 0 && res.data && res.data.tickets.length > 0) {
+                var tickets = res.data.tickets;
+
+                // 遍历所有查询结果，判断是否有中奖记录
+                var hasWinningRecord = false;
+                for (var i = 0; i < tickets.length; i++) {
+                  if (tickets[i].win) {
+                    hasWinningRecord = true;
+                    break;
+                  }
+                }
+
+                // 根据是否有中奖记录展示不同的信息
+                if (hasWinningRecord) {
+                  // 在查询结果区域展示中奖地址和号码
+                  $('#result').append('<p>' + address + ' 中奖了✔</p>');
+                } else {
+                  // 在查询结果区域展示未中奖地址信息
+                  $('#result').append('<p>' + address + ' 没有中奖✘</p>');
+                }
+              } else {
+                // 在查询结果区域展示查询失败信息
+                $('#result').append('<p>查询地址 ' + address + ' 失败：' + res.message + '</p>');
+              }
+            },
+            error: function () {
+              // 在查询结果区域展示查询失败信息
+              $('#result').append('<p>查询地址 ' + address + ' 失败，请检查网络连接或稍后重试。</p>');
+            }
+          });
+        });
+      });
+    });
+  </script>
+</body>
+</html>
